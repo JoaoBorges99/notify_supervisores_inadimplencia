@@ -1,4 +1,6 @@
 from api_request import ApiRequest
+import create_excel
+from datetime import datetime
 import re
 
 def get_relatorio_por_supervisor ():
@@ -7,8 +9,16 @@ def get_relatorio_por_supervisor ():
      for supervisor in sup_data:
           if supervisor['telefone'] != None:
                numero_limpo = re.sub(r'[^0-9]', '', supervisor['telefone'])
-               # retorno_msg = api_request.send_mensagem_chatbot(f"Olá {supervisor['titulo']}, segue em anexo o realtorio de inadimplência dos clientes da sua equipe", "5533991165622")
-               # print(retorno_msg)
+               json_relatorio = ApiRequest().relatorio_inadiplencia_filtrando_supervisor(supervisor['codigo'], supervisor['titulo'])
+               caminho_arquivo = create_excel.writeExcel(json_relatorio, f"{supervisor['codigo']}-{datetime.now().date()}")
+               
+               retorno_msg = ApiRequest().send_mensagem_chatbot(
+                    f"Olá {supervisor['titulo']}, segue em anexo o realtorio de inadimplência dos clientes da sua equipe", 
+                    "5533991165622",
+                    caminho_arquivo,
+                    f"{supervisor['codigo']}-{datetime.now().date()}.xlsx"
+               )
+               print(retorno_msg)
 
 
 get_relatorio_por_supervisor()

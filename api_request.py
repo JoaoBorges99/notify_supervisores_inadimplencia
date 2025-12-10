@@ -71,10 +71,13 @@ class ApiRequest:
                logging.error(e)
                return {}
 
-     def relatorio_inadiplencia_filtrando_supervisor(self) -> dict:
+     def relatorio_inadiplencia_filtrando_supervisor(self, codigo_supervisor: str, nome_supervisor: str) -> list :
           try:
                json_body = {
-
+                    "database" : "atacado",
+                    "matricula" : "3312",
+                    "indexPage" : 0,
+                    "cardsupervisor" : [{"codigo" : codigo_supervisor, "titulo": nome_supervisor}]
                }
                token = self.generate_token_request(json_body)
 
@@ -83,7 +86,7 @@ class ApiRequest:
                     "token" : token
                }
 
-               response = requests.post("", json=body_request)
+               response = requests.post(f"{self.agn_api_url}/financeiro/clientes_inadimplentes_por_supervisor/index.php", json=body_request)
 
                if response.status_code == 200:
                     return response.json()
@@ -92,22 +95,29 @@ class ApiRequest:
 
           except Exception as e:
                print(e)
-               return {}
+               return []
           
-     def send_mensagem_chatbot(self,msg: str, numero: str) -> str:
+     def send_mensagem_chatbot(self, msg: str, numero: str, caminho_arquivo: str, nome_nome_arquivo: str) -> str:
           try:
                
                headers = {
                     "Content-Type": "application/json",
                     "apikey": self.wpp_api_key
                }
+               
+               with open(caminho_arquivo, 'rb') as arquivo:
+                    conteudo = arquivo.read()
 
                body_message_json = {
                     "number": numero,
-                    "text": msg
+                    "mediatype" : "document",
+                    "fileName": f"{nome_nome_arquivo}",
+                    "caption": f"{msg}",
+                    "media": f"{base64.b64encode(conteudo).decode('utf-8')}"
+                                   
                }
-               
-               response = requests.post(f"{self.wpp_api_url}/message/sendText/ti", headers=headers, json=body_message_json)
+
+               response = requests.post(f"{self.wpp_api_url}/message/sendMedia/ti", headers=headers, json=body_message_json)
                
                if response.status_code != 201 and response.status_code != 200:
                     raise Exception(response.json())
