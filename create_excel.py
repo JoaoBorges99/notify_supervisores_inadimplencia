@@ -2,7 +2,6 @@ import pandas as pd
 import os
 
 def writeExcel(data: list, file_name:str, extension: str = 'xlsx'):
-    os.rmdir('arquivos-gerados')
     os.makedirs('arquivos-gerados', exist_ok=True)
 
     df = pd.DataFrame(data,)
