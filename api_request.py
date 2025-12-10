@@ -4,100 +4,114 @@ import base64
 import hmac
 import json
 import hashlib
+import os
+import dotenv
+
+class ApiRequest:
+
+     def __init__(self) -> None:
+          dotenv.load_dotenv()
+          self.agn_api_Key = os.getenv('AGN_API_KEY')
+          self.agn_api_url = os.getenv('AGR_API_URL')
+          self.wpp_api_key = os.getenv('WPP_API_KEY')
+          self.wpp_api_url = os.getenv('WPP_API_URL')
+
+     def generate_token_request (self,body: dict) -> str:
+          try:
+               header = {
+                    "alg": "HS256",
+                    "typ": "JWT",
+               }
+               header_body = json.dumps(header).encode("utf-8")
+               header64 = base64.b64encode(header_body).decode("utf-8")
+
+               payload = body
+               payload_json = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+               payload64 = base64.b64encode(payload_json).decode("utf-8")
+
+               secret = self.agn_api_Key
+               if secret is None:
+                    raise Exception("ERRO!A chave de api não pode ser lida ou não foi definida nas variaveis de ambiente.")
+
+               message = f"{header64}.{payload64}".encode("utf-8")
+
+               digest = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).digest()
+               sign = base64.b64encode(digest).decode("utf-8")
+
+               token = f"{header64}.{payload64}.{sign}"     
+               return token
+          except Exception as e:
+               print(e)
+               return ''
 
 
-def generate_token_request (body: dict) -> str:
-     header = {
-          "alg": "HS256",
-          "typ": "JWT",
-     }
-     header_body = json.dumps(header).encode("utf-8")
-     header64 = base64.b64encode(header_body).decode("utf-8")
 
-     payload = body
-     payload_json = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-     payload64 = base64.b64encode(payload_json).decode("utf-8")
+     def get_supervisores_ativos (self) -> dict:
+          try:
+               json_data = {
+                    "function" : "getSupervisor",
+                    "database" : "atacado",
+                    "matricula" : "3312"
+               }
 
-     secret = "tisa098*"
-     message = f"{header64}.{payload64}".encode("utf-8")
+               token = self.generate_token_request(json_data)
 
-     digest = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).digest()
-     sign = base64.b64encode(digest).decode("utf-8")
+               body = {
+                    "connection" : "atacado",
+                    "token" : token
+               }
 
-     token = f"{header64}.{payload64}.{sign}"     
-     return token
-
-
-def get_relatorio() -> str:
-     return ""
-
-
-def get_supervisores_ativos () -> dict:
-     try:
-          json_data = {
-               "function" : "getSupervisor",
-               "database" : "atacado",
-               "matricula" : "3312"
-          }
-
-          token = generate_token_request(json_data)
-
-          body = {
-               "connection" : "atacado",
-               "token" : token
-          }
-
-          response = requests.post('https://analytics.agnconsultoria.com.br/api/filtros/query_filtros.php', json=body)
-          
-          if response.status_code != 200:
-               raise Exception("Erro ao executar solicitação na API, erro interno da API de terceiros!")
-          
-          return response.json()
-     except Exception as e:
-          logging.error(e)
-          return {}
-
-def relatorio_inadiplencia_filtrando_supervisor() -> dict:
-     try:
-          json_body = {
-
-          }
-          token = generate_token_request(json_body)
-
-          body_request = {
-               "connection" : "atacado",
-               "token" : token
-          }
-
-          response = requests.post("", json=body_request)
-
-          if response.status_code == 200:
+               response = requests.post(f'{self.agn_api_url}/filtros/query_filtros.php', json=body)
+               
+               if response.status_code != 200:
+                    raise Exception("Erro ao executar solicitação na API, erro interno da API de terceiros!")
+               
                return response.json()
-          else:
-               raise Exception("Status code diferente de 200, erro ao executar requisisção de relatorio na função relatorio_inadiplencia_filtrando_supervisor")
+          except Exception as e:
+               logging.error(e)
+               return {}
 
-     except Exception as e:
-          print(e)
-          return {}
-     
-def send_mensagem_chatbot(msg: str, numero: str) -> str:
-     try:
-          
-          headers = {
-               "Content-Type": "application/json",
-               "apikey": "429683C4C977415CAAFCCE10F7D57E11"
-          }
+     def relatorio_inadiplencia_filtrando_supervisor(self) -> dict:
+          try:
+               json_body = {
 
-          body_message_json = {
-               "number": numero,
-               "text": msg
-          }
+               }
+               token = self.generate_token_request(json_body)
+
+               body_request = {
+                    "connection" : "atacado",
+                    "token" : token
+               }
+
+               response = requests.post("", json=body_request)
+
+               if response.status_code == 200:
+                    return response.json()
+               else:
+                    raise Exception("Status code diferente de 200, erro ao executar requisisção de relatorio na função relatorio_inadiplencia_filtrando_supervisor")
+
+          except Exception as e:
+               print(e)
+               return {}
           
-          response = requests.post("http://192.33.0.24:8081/message/sendText/ti", headers=headers, json=body_message_json)
-          
-          if response.status_code != 201 and response.status_code != 200:
-               raise Exception(response.json())
-          
-          return f"Mensagem enviada com sucesso para o numero {numero} "
-     except Exception as e :
-          return f"Erro ao enviar mensagem: {e}"
+     def send_mensagem_chatbot(self,msg: str, numero: str) -> str:
+          try:
+               
+               headers = {
+                    "Content-Type": "application/json",
+                    "apikey": self.wpp_api_key
+               }
+
+               body_message_json = {
+                    "number": numero,
+                    "text": msg
+               }
+               
+               response = requests.post(f"{self.wpp_api_url}/message/sendText/ti", headers=headers, json=body_message_json)
+               
+               if response.status_code != 201 and response.status_code != 200:
+                    raise Exception(response.json())
+               
+               return f"Mensagem enviada com sucesso para o numero {numero} "
+          except Exception as e :
+               return f"Erro ao enviar mensagem: {e}"

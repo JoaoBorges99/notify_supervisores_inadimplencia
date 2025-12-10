@@ -1,8 +1,8 @@
-import api_request
+from api_request import ApiRequest
 import re
 
 def get_relatorio_por_supervisor ():
-     sup_data = api_request.get_supervisores_ativos()
+     sup_data = ApiRequest().get_supervisores_ativos()
 
      for supervisor in sup_data:
           if supervisor['telefone'] != None:
