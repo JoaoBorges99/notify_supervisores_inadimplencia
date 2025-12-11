@@ -17,13 +17,13 @@ def get_relatorio_por_supervisor ():
                
                caminho_arquivo = create_excel.writeExcel(json_relatorio, f"{supervisor['codigo']}-{datetime.now().date()}")
                
-               retorno_msg = ApiRequest().send_mensagem_chatbot(
-                    f"Olá *{str(supervisor['titulo']).upper()}*, segue em anexo o realtorio de inadimplência dos clientes da base de sua equipe.", 
-                    "5533991165622",
-                    caminho_arquivo,
-                    f"{supervisor['codigo']}-{datetime.now().date()}.xlsx"
-               )
-               print(retorno_msg)
+               # retorno_msg = ApiRequest().send_mensagem_chatbot(
+               #      f"Olá *{str(supervisor['titulo']).upper()}*, segue em anexo o realtorio de inadimplência dos clientes da base de sua equipe.", 
+               #      "5533991165622",
+               #      caminho_arquivo,
+               #      f"{supervisor['codigo']}-{datetime.now().date()}.xlsx"
+               # )
+               # print(retorno_msg)
 
 
 get_relatorio_por_supervisor()
