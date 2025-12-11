@@ -12,7 +12,7 @@ def get_relatorio_por_supervisor ():
                json_relatorio = ApiRequest().relatorio_inadiplencia_filtrando_supervisor(supervisor['codigo'], supervisor['titulo'])
                
                if json_relatorio == []:
-                    print(f"Não há nanhum conteudo a ser enviado para o {supervisor['codigo']}-{str(supervisor['titulo']).upper()}")
+                    print(f"Não há nenhum conteudo a ser enviado para o {supervisor['codigo']}-{str(supervisor['titulo']).upper()}")
                     continue
                
                caminho_arquivo = create_excel.writeExcel(json_relatorio, f"{supervisor['codigo']}-{datetime.now().date()}")

@@ -87,6 +87,9 @@ class ApiRequest:
                }
 
                response = requests.post(f"{self.agn_api_url}/financeiro/clientes_inadimplentes_por_supervisor/index.php", json=body_request)
+               
+               if 'result' in response.json()[0]:
+                    raise Exception("Não foi possivel encontrar dados para a busca executada!")
 
                if response.status_code == 200:
                     return response.json()
@@ -121,7 +124,7 @@ class ApiRequest:
                
                if response.status_code != 201 and response.status_code != 200:
                     raise Exception(response.json())
-               
+
                return f"Mensagem enviada com sucesso para o numero {numero} "
           except Exception as e :
                return f"Erro ao enviar mensagem: {e}"
