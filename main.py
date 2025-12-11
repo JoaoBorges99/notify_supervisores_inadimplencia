@@ -1,9 +1,15 @@
+import shutil
+import os
 from api_request import ApiRequest
 import create_excel
 from datetime import datetime
 import re
 
 def get_relatorio_por_supervisor ():
+
+     if os.path.exists('arquivos-gerados'):
+          shutil.rmtree('arquivos-gerados/')
+               
      sup_data = ApiRequest().get_supervisores_ativos()
 
      for supervisor in sup_data:
