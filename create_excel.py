@@ -40,7 +40,6 @@ def writeExcel(data: list, file_name: str, extension: str = 'xlsx'):
           valores_agrupados = df.groupby('CODSUPERVISOR', dropna=False)[colunas_para_soma].sum().reset_index()
           ultima_linha = criar_tabela_agrupada(ws, valores_agrupados, ultima_linha, titulo=f"TOTAL GERAL POR 'CODSUPERVISOR'", colunas_soma=colunas_para_soma)
 
-          
           # TOTALIZADOR POR AGRUPAMENTOS
           for key in ['CODUSUR']:
                if key in df.columns:
@@ -48,6 +47,13 @@ def writeExcel(data: list, file_name: str, extension: str = 'xlsx'):
                     tabela_rca = tabela_rca[[key, *colunas_para_soma]]
                     ultima_linha += 1
                     ultima_linha = criar_tabela_agrupada(ws, tabela_rca, ultima_linha, titulo=f"TOTAL POR {key}", colunas_soma=colunas_para_soma)
+
+          # NOVO: AGRUPAMENTO POR RCA (sem somas, apenas listando linhas agrupadas)
+          if 'CODUSUR' in df.columns:
+               grouped = df.groupby('CODUSUR', dropna=False)
+               for rca_name, group_df in grouped:
+                    ultima_linha += 1  # Espaço entre grupos
+                    ultima_linha = criar_tabela_agrupada(ws, group_df.reset_index(drop=True), ultima_linha, titulo=f"RCA: {rca_name}", colunas_soma=[])
 
           wb.save(caminho_arquivo)
           return caminho_arquivo
@@ -89,6 +95,10 @@ def criar_tabela_agrupada(planilha, dados: pd.DataFrame, linha_inicio: int, titu
 
      for i, linha in dados.iterrows():
           for j, coluna in enumerate(dados.columns, start=1):
+               
+               if type(i) != int:
+                    return linha_inicio
+               
                proxima_linha = linha_inicio + 1 + i
 
                if coluna in colunas_soma:
