@@ -37,6 +37,20 @@ O relatório é baseado em um espelho similar ao sistema 8318 e inclui informaç
 
    Idealmente, configure um agendamento semanal (ex.: via cron job ou task scheduler) para execução automática aos sábados.
 
+### Usando Docker
+
+Para executar o sistema usando Docker:
+
+1. Certifique-se de que o Docker e Docker Compose estão instalados.
+2. Configure o arquivo `.env` com as variáveis necessárias.
+3. Execute:
+
+   ```
+   docker-compose up --build
+   ```
+
+   Isso construirá a imagem e executará o container, montando volumes para `arquivos-gerados` e `.env`.
+
 ## Período de Vencimento
 
 O relatório foca em títulos com vencimento entre 90 e 10 dias de atraso.

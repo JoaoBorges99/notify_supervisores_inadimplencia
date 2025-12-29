@@ -45,7 +45,6 @@ class ApiRequest:
                return ''
 
 
-
      def get_supervisores_ativos (self) -> dict:
           try:
                json_data = {

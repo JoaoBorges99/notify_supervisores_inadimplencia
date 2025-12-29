@@ -1,0 +1,8 @@
+services:
+  notificar-rcas:
+    build: .
+    volumes:
+      - ./arquivos-gerados:/app/arquivos-gerados
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
