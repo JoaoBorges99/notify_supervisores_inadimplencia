@@ -39,17 +39,17 @@ O relatório é baseado em um espelho similar ao sistema 8318 e inclui informaç
 
 ### Usando Docker
 
-Para executar o sistema usando Docker:
+Para executar o sistema usando Docker com agendamento automático:
 
 1. Certifique-se de que o Docker e Docker Compose estão instalados.
 2. Configure o arquivo `.env` com as variáveis necessárias.
 3. Execute:
 
    ```
-   docker-compose up --build
+   docker-compose up --build -d
    ```
 
-   Isso construirá a imagem e executará o container, montando volumes para `arquivos-gerados` e `.env`.
+   O container será executado em background e o sistema será executado automaticamente toda segunda-feira às 12:00 (meio-dia). Os arquivos gerados serão salvos na pasta `arquivos-gerados/` do host.
 
 ## Período de Vencimento
 

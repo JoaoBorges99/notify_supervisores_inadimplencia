@@ -116,10 +116,9 @@ class ApiRequest:
                     "fileName": f"{nome_nome_arquivo}",
                     "caption": f"{msg}",
                     "media": f"{base64.b64encode(conteudo).decode('utf-8')}"
-                                   
                }
 
-               response = requests.post(f"{self.wpp_api_url}/message/sendMedia/ti", headers=headers, json=body_message_json)
+               response = requests.post(f"{self.wpp_api_url}/message/sendMedia/cobranca", headers=headers, json=body_message_json)
                
                if response.status_code != 201 and response.status_code != 200:
                     raise Exception(response.json())

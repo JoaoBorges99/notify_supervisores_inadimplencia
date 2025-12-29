@@ -1,6 +1,7 @@
 services:
   notificar-rcas:
     build: .
+    restart: unless-stopped
     volumes:
       - ./arquivos-gerados:/app/arquivos-gerados
       - ./.env:/app/.env
