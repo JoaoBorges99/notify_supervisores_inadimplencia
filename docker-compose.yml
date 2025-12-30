@@ -1,5 +1,6 @@
+name: notificar_supervisores
 services:
-  notificar-rcas:
+  send_menssages:
     build: .
     restart: unless-stopped
     volumes:

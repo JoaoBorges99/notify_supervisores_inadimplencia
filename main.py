@@ -39,7 +39,7 @@ def get_relatorio_por_supervisor ():
                     # '5533991165622',
                     f"55{numero_limpo}",
                     caminho_arquivo,
-                    f"{supervisor['codigo']}-{datetime.now().date()}.xlsx"
+                    f"sup-{supervisor['codigo']}-{datetime.now().date()}.xlsx"
                )
                print(retorno_msg)
 
