@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create crontab file
-RUN echo "0 12 * * 1 /usr/local/bin/python /app/main.py" > /etc/cron.d/notificar-rcas
+RUN echo "0 12 * * 1 /usr/local/bin/python -u /app/main.py >> /proc/1/fd/1 2>&1" > /etc/cron.d/notificar-rcas
 
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/notificar-rcas

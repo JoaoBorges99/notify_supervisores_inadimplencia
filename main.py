@@ -6,6 +6,7 @@ from datetime import datetime
 import re
 
 def get_relatorio_por_supervisor ():
+     print(f'Execução do envio de mensgens iniciada - {datetime.today()} ')
 
      if os.path.exists('arquivos-gerados'):
           for filename in os.listdir('arquivos-gerados'):
@@ -31,7 +32,7 @@ def get_relatorio_por_supervisor ():
                if json_relatorio == []:
                     print(f"Não há nenhum conteudo a ser enviado para o {supervisor['codigo']}-{str(supervisor['titulo']).upper()}")
                     continue
-               
+
                caminho_arquivo = create_excel.writeExcel(json_relatorio, f"sup-{supervisor['codigo']}-{datetime.now().date()}")
                
                retorno_msg = ApiRequest().send_mensagem_chatbot(
@@ -43,5 +44,6 @@ def get_relatorio_por_supervisor ():
                )
                print(retorno_msg)
 
+     print(f'Execução finalizada - {datetime.today()} ')
 
 get_relatorio_por_supervisor()

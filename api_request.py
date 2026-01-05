@@ -1,5 +1,4 @@
 import requests
-import logging
 import base64
 import hmac
 import json
@@ -67,7 +66,7 @@ class ApiRequest:
                
                return response.json()
           except Exception as e:
-               logging.error(e)
+               print(e)
                return {}
 
      def relatorio_inadiplencia_filtrando_supervisor(self, codigo_supervisor: str, nome_supervisor: str) -> list :
