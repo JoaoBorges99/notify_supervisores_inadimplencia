@@ -1,0 +1,10 @@
+AGN_API_KEY='1234567890'
+AGR_API_URL='https://analytics.agnconsultoria.com.br/api'
+
+WPP_API_KEY='1234567890'
+WPP_API_URL='https://api.whatsapp.com/v1'
+
+RUN_MODE='scheduler'
+TIMEZONE='America/Sao_Paulo'
+SCHEDULE_DAYS='SEG'
+SCHEDULE_TIMES='12:00'

@@ -28,18 +28,48 @@ O relatório é baseado em um espelho similar ao sistema 8318 e inclui informaç
 
 ## Como Usar
 
-1. Configure as variáveis de ambiente necessárias (chaves de API, URLs) em um arquivo `.env`.
-2. Execute o script principal:
+### Variáveis de ambiente
 
-   ```
-   python main.py
-   ```
+Configure as variáveis em `.env`:
 
-   Idealmente, configure um agendamento semanal (ex.: via cron job ou task scheduler) para execução automática aos sábados.
+```env
+AGN_API_KEY='...'
+AGR_API_URL='...'
+WPP_API_KEY='...'
+WPP_API_URL='...'
+
+RUN_MODE='scheduler'
+TIMEZONE='America/Sao_Paulo'
+SCHEDULE_DAYS='SEG,TER,QUA,QUI,SEX'
+SCHEDULE_TIMES='08:00,12:00'
+```
+
+- `TIMEZONE` é obrigatório e deve ser um timezone válido (ex.: `America/Sao_Paulo`).
+- `SCHEDULE_DAYS` aceita: `SEG,TER,QUA,QUI,SEX,SAB,DOM`.
+- `SCHEDULE_TIMES` aceita múltiplos horários em `HH:MM`, separados por vírgula.
+- O scheduler executa pela combinação de dias x horários.
+
+### Execução sem Docker
+
+- Execução única (manual):
+
+  ```
+  python main.py
+  ```
+
+  Use `RUN_MODE='once'` para finalizar após uma execução.
+
+- Execução contínua (agendada pelo próprio Python):
+
+  ```
+  python main.py
+  ```
+
+  Use `RUN_MODE='scheduler'` para manter o processo ativo e disparar nos dias/horários do `.env`.
 
 ### Usando Docker
 
-Para executar o sistema usando Docker com agendamento automático:
+Para executar com Docker usando scheduler interno (sem cron no container):
 
 1. Certifique-se de que o Docker e Docker Compose estão instalados.
 2. Configure o arquivo `.env` com as variáveis necessárias.
@@ -49,7 +79,7 @@ Para executar o sistema usando Docker com agendamento automático:
    docker-compose up --build -d
    ```
 
-   O container será executado em background e o sistema será executado automaticamente toda segunda-feira às 12:00 (meio-dia). Os arquivos gerados serão salvos na pasta `arquivos-gerados/` do host.
+   O container será executado em background e o sistema seguirá o agendamento definido no `.env`. Os arquivos gerados serão salvos na pasta `arquivos-gerados/` do host.
 
 ## Período de Vencimento
 

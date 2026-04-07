@@ -1,5 +1,6 @@
 __pycache__/
 venc/
 venv/
+.venv/
 .env
 arquivos-gerados/
