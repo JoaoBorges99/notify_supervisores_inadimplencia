@@ -1,4 +1,4 @@
-AGN_API_KEY='tisa098*'
+AGN_API_KEY='sua-chave-api'
 AGR_API_URL='https://analytics.agnconsultoria.com.br/api'
 
 WPP_API_URL='https://apibot.agnconsultoria.com.br'
@@ -6,6 +6,7 @@ WPP_SESSION_NAME='cobranca'
 
 RUN_MODE='scheduler'
 TIMEZONE='America/Sao_Paulo'
+DRY_RUN='false'
 
 INADIMPLENCIA_ENABLED='true'
 SCHEDULE_DAYS='SEG'
@@ -13,4 +14,4 @@ SCHEDULE_TIMES='12:00'
 
 CADASTRO_ENABLED='true'
 CADASTRO_SCHEDULE_DAYS='SEG'
-CADASTRO_SCHEDULE_TIMES='12:00'
+CADASTRO_SCHEDULE_TIMES='08:00'

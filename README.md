@@ -1,139 +1,116 @@
 # Notificar GAs — Relatórios de Inadimplência e Cadastro Incompleto
 
-## Descrição do Projeto
-
-Este projeto automatiza a geração e o envio semanal de relatórios para Gerentes de Área (GAs) via WhatsApp. Há **dois jobs independentes**, cada um com agenda e falha isoladas:
+Gera e envia, via WhatsApp, relatórios Excel semanais para Gerentes de Área (GAs). Há **dois jobs independentes**, com agenda e falha isoladas:
 
 - **Inadimplência**: títulos vencidos (espelho próximo da rotina 8318), com totais por RCA e supervisor.
-- **Cadastro incompleto**: clientes **bloqueados** na rotina 1203 cujo histórico de bloqueio é **CADASTRO INCOMPLETO**.
+- **Cadastro incompleto**: clientes bloqueados na rotina 1203 cujo histórico de bloqueio é **CADASTRO INCOMPLETO**.
 
-O scheduler interno dispara cada job nos dias e horários configurados. O padrão sugerido é **segunda**: cadastro incompleto às **08:00** e inadimplência às **12:00**, para não colidir no WhatsApp.
+O scheduler interno dispara cada job nos dias e horários do `.env`. O padrão sugerido é **segunda**: cadastro incompleto às **08:00** e inadimplência às **12:00**, para não colidir no WhatsApp.
 
-## Funcionalidades Principais
+## Pré-requisitos
 
-- **Obtenção de Dados**: consulta a lista de supervisores ativos e o relatório filtrado por GA.
-- **Geração de Relatórios**: cria arquivos Excel (.xlsx) por GA.
+- Python >= 3.9
+- Docker e Docker Compose (opcional, para rodar em container)
+
+## Funcionalidades
+
+- Consulta supervisores ativos e o relatório filtrado por GA.
+- Gera um Excel (`.xlsx`) por GA em `arquivos-gerados/`.
 - **Inadimplência**: totais por RCA e supervisor, além de blocos agrupados por RCA.
-- **Cadastro incompleto**: planilha de listagem (sem totais financeiros), com blocos por RCA quando a coluna existir.
-- **Envio Automático**: WhatsApp com o Excel em anexo. Se o GA não tiver clientes no relatório, nada é enviado.
+- **Cadastro incompleto**: planilha de listagem (sem totais financeiros).
+- Envia o Excel pelo WhatsApp. Se o GA não tiver clientes no relatório, nada é enviado.
+- `DRY_RUN=true` gera os arquivos e **não** envia WhatsApp.
 
-## Estrutura do Projeto
+## Estrutura do projeto
 
-- `api_request.py`: APIs externas, JWT e envio de mensagens.
-- `create_excel.py`: geração e formatação dos Excel.
-- `main.py`: orquestra os jobs e o agendamento.
-- `requirements.txt`: dependências Python.
-
-## Como Usar
-
-### Variáveis de ambiente
-
-Configure as variáveis em `.env`:
-
-```env
-AGN_API_KEY='...'
-AGR_API_URL='...'
-WPP_API_URL='https://apibot.agnconsultoria.com.br'
-WPP_SESSION_NAME='ti'
-
-RUN_MODE='scheduler'
-TIMEZONE='America/Sao_Paulo'
-
-INADIMPLENCIA_ENABLED='true'
-SCHEDULE_DAYS='SEG'
-SCHEDULE_TIMES='12:00'
-
-CADASTRO_ENABLED='true'
-CADASTRO_SCHEDULE_DAYS='SEG'
-CADASTRO_SCHEDULE_TIMES='08:00'
+```
+.
+├── main.py              # orquestra os jobs e o agendamento
+├── api_request.py       # APIs externas, JWT e envio de WhatsApp
+├── create_excel.py      # geração e formatação dos Excel
+├── env_exemplo          # modelo das variáveis de ambiente
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-- `TIMEZONE` é obrigatório (ex.: `America/Sao_Paulo`).
-- `INADIMPLENCIA_ENABLED` e `CADASTRO_ENABLED` aceitam `true`/`false`. Padrão: `true`.
-- `SCHEDULE_DAYS` / `SCHEDULE_TIMES`: agenda da **inadimplência** (obrigatórios se o job estiver ligado).
-- `CADASTRO_SCHEDULE_DAYS` / `CADASTRO_SCHEDULE_TIMES`: agenda do **cadastro incompleto**. Se omitidos, usam `SEG` e `08:00`.
-- Dias aceitos: `SEG,TER,QUA,QUI,SEX,SAB,DOM`.
-- Horários em `HH:MM`, separados por vírgula.
-- Falha em um job não cancela o outro nem o loop do scheduler.
-- `DRY_RUN=true`: gera os Excel e **não** envia WhatsApp (para validar o fluxo).
-- `WPP_SESSION_NAME`: sessão do bot no `POST /senddocument` (padrão: `cobranca`).
-- `WPP_LIVE_SEND=true` + `WPP_TEST_PHONE`: o unittest envia um Excel real para o número de teste.
+## Instalação
 
-Rotas da API analytics:
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy env_exemplo .env
+```
+
+Edite o `.env` com as chaves e URLs reais.
+
+## Variáveis de ambiente
+
+| Variável | Obrigatória | Padrão | Descrição |
+|----------|-------------|--------|-----------|
+| `AGN_API_KEY` | sim | — | Chave HMAC para as APIs Analytics |
+| `AGR_API_URL` | sim | — | URL base da API Analytics |
+| `WPP_API_URL` | sim | — | URL base da API do bot WhatsApp |
+| `WPP_SESSION_NAME` | não | `cobranca` | Sessão do bot em `POST /senddocument` |
+| `RUN_MODE` | não | `once` | `once` (executa e sai) ou `scheduler` (loop) |
+| `TIMEZONE` | sim | — | Ex.: `America/Sao_Paulo` |
+| `DRY_RUN` | não | `false` | `true` gera Excel sem enviar WhatsApp |
+| `INADIMPLENCIA_ENABLED` | não | `true` | Liga/desliga o job de inadimplência |
+| `SCHEDULE_DAYS` | se o job estiver ligado | — | Dias da inadimplência (`SEG,TER,...`) |
+| `SCHEDULE_TIMES` | se o job estiver ligado | — | Horários da inadimplência (`HH:MM`) |
+| `CADASTRO_ENABLED` | não | `true` | Liga/desliga o job de cadastro incompleto |
+| `CADASTRO_SCHEDULE_DAYS` | não | `SEG` | Dias do cadastro incompleto |
+| `CADASTRO_SCHEDULE_TIMES` | não | `08:00` | Horários do cadastro incompleto |
+
+Dias aceitos: `SEG,TER,QUA,QUI,SEX,SAB,DOM`. Horários em `HH:MM`, separados por vírgula. Falha em um job não cancela o outro nem o loop do scheduler.
+
+Rotas da API Analytics:
 
 - Inadimplência: `/financeiro/clientes_inadimplentes_por_supervisor/index.php`
 - Cadastro incompleto: `/financeiro/cadastro_incompleto/index.php`
 
-### Execução com .venv
+## Uso
 
-```
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
+### Execução única (manual)
 
-Validar sem enviar WhatsApp:
-
-```
-python -m unittest test_servico.py -v
-```
-
-Envio real no WhatsApp (número de teste):
-
-```
-set WPP_LIVE_SEND=true
-set WPP_TEST_PHONE=5533991461098
-python -m unittest test_servico.TestLiveApi.test_senddocument_live_envia_arquivo -v
-```
-
-```
-set DRY_RUN=true
-set RUN_MODE=once
+```powershell
+$env:RUN_MODE='once'
 python main.py
 ```
 
-No PowerShell:
+### Validar sem enviar WhatsApp
 
-```
+```powershell
 $env:DRY_RUN='true'
 $env:RUN_MODE='once'
 python main.py
 ```
 
-### Execução sem Docker
+### Scheduler (processo contínuo)
 
-- Execução única (manual) dos jobs habilitados:
+```powershell
+$env:RUN_MODE='scheduler'
+python main.py
+```
 
-  ```
-  python main.py
-  ```
+Com `RUN_MODE='scheduler'`, o processo permanece ativo e dispara nos dias/horários do `.env`.
 
-  Use `RUN_MODE='once'` para finalizar após a execução.
+### Docker
 
-- Execução contínua (agendada pelo próprio Python):
+O container usa o scheduler interno (sem cron):
 
-  ```
-  python main.py
-  ```
+1. Configure o `.env`.
+2. Suba o serviço:
 
-  Use `RUN_MODE='scheduler'` para manter o processo ativo e disparar nos dias/horários do `.env`.
+```bash
+docker-compose up --build -d
+```
 
-### Usando Docker
+Os arquivos gerados ficam em `arquivos-gerados/` no host.
 
-Para executar com Docker usando scheduler interno (sem cron no container):
+## Notas técnicas
 
-1. Certifique-se de que o Docker e Docker Compose estão instalados.
-2. Configure o arquivo `.env` com as variáveis necessárias.
-3. Execute:
-
-   ```
-   docker-compose up --build -d
-   ```
-
-   O container segue o agendamento do `.env`. Os arquivos gerados vão para `arquivos-gerados/` no host.
-
-## Notas Técnicas
-
-- Inadimplência: Excel com tabelas agrupadas e somas automáticas (`VALOR_TOTAL_COM_JUROS`, `VALOR_TOTAL_ORIGINAL`).
-- Cadastro incompleto: Excel de listagem, arquivo `cadastro-sup-{codigo}-{data}.xlsx`.
-- Envio do Excel via `POST {WPP_API_URL}/senddocument` (header `apikey`, sessão `WPP_SESSION_NAME`, documento em base64).
+- Inadimplência: Excel com tabelas agrupadas e somas (`VALOR_TOTAL_COM_JUROS`, `VALOR_TOTAL_ORIGINAL`). Arquivo `sup-{codigo}-{data}.xlsx`.
+- Cadastro incompleto: Excel de listagem. Arquivo `cadastro-sup-{codigo}-{data}.xlsx`.
+- Envio via `POST {WPP_API_URL}/senddocument` (JSON com `sessionname`, telefone, caption e documento em base64).

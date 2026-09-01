@@ -148,10 +148,6 @@ def run_job_cadastro_incompleto():
     )
 
 
-def get_relatorio_por_supervisor():
-    run_job_inadimplencia()
-
-
 def _parse_schedule_days(raw_days: str, env_name: str = "SCHEDULE_DAYS"):
     if not raw_days:
         raise ValueError(f"{env_name} é obrigatório. Exemplo: SEG,TER,QUA")
