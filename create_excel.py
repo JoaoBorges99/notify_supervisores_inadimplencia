@@ -14,11 +14,19 @@ def _ajustar_largura_colunas(ws):
           ws.column_dimensions[col_letter].width = max_len + 2
 
 
+def _coluna_existente(df: pd.DataFrame, nomes: tuple[str, ...]):
+     for nome in nomes:
+          if nome in df.columns:
+               return nome
+     return None
+
+
 def _adicionar_blocos_por_rca(ws, df: pd.DataFrame, linha_inicio: int) -> int:
-     if 'CODRCA' not in df.columns:
+     coluna_rca = _coluna_existente(df, ('CODRCA', 'COD_RCA'))
+     if not coluna_rca:
           return linha_inicio
 
-     grouped = df.groupby('CODRCA', dropna=False)
+     grouped = df.groupby(coluna_rca, dropna=False)
      for rca_name, group_df in grouped:
           linha_inicio += 1
           linha_inicio = criar_tabela_agrupada(
@@ -52,44 +60,60 @@ def writeExcel(data: list, file_name: str, extension: str = 'xlsx', modo: str = 
      caminho_arquivo = f'arquivos-gerados/{file_name}.{extension}'
      df.to_excel(caminho_arquivo, index=False)
      wb = load_workbook(caminho_arquivo)
-     ws = wb['Sheet1']
+     try:
+          ws = wb['Sheet1']
 
-     _ajustar_largura_colunas(ws)
+          _ajustar_largura_colunas(ws)
 
-     if modo == 'listagem':
-          fonte_cabecalho = Font(bold=True)
-          for cell in ws[1]:
-               cell.font = fonte_cabecalho
-               cell.alignment = Alignment(horizontal="center")
+          if modo == 'listagem':
+               fonte_cabecalho = Font(bold=True)
+               for cell in ws[1]:
+                    cell.font = fonte_cabecalho
+                    cell.alignment = Alignment(horizontal="center")
 
-          _adicionar_blocos_por_rca(ws, df, ws.max_row + 2)
+               wb.save(caminho_arquivo)
+               return caminho_arquivo
+
+          colunas_para_soma = ['VALOR_TOTAL_COM_JUROS', 'VALOR_TOTAL_ORIGINAL']
+
+          for colunas in colunas_para_soma:
+               df[colunas] = pd.to_numeric(df[colunas], errors='coerce')
+
+          ws["A1"].font = Font(bold=True)
+          ws["A1"].alignment = Alignment(horizontal="center")
+
+          ultima_linha = ws.max_row + 2
+
+          coluna_supervisor = _coluna_existente(df, ('CODSUPERVISOR', 'COD_SUPERVISOR'))
+          if coluna_supervisor:
+               valores_agrupados = df.groupby(coluna_supervisor, dropna=False)[colunas_para_soma].sum().reset_index()
+               ultima_linha = criar_tabela_agrupada(
+                    ws,
+                    valores_agrupados,
+                    ultima_linha,
+                    titulo=f"TOTAL GERAL POR '{coluna_supervisor}'",
+                    colunas_soma=colunas_para_soma,
+               )
+
+          coluna_rca = _coluna_existente(df, ('CODRCA', 'COD_RCA'))
+          if coluna_rca:
+               tabela_rca = df.groupby(coluna_rca, dropna=False)[colunas_para_soma].sum().reset_index()
+               tabela_rca = tabela_rca[[coluna_rca, *colunas_para_soma]]
+               ultima_linha += 1
+               ultima_linha = criar_tabela_agrupada(
+                    ws,
+                    tabela_rca,
+                    ultima_linha,
+                    titulo=f"TOTAL POR {coluna_rca}",
+                    colunas_soma=colunas_para_soma,
+               )
+
+          _adicionar_blocos_por_rca(ws, df, ultima_linha)
+
           wb.save(caminho_arquivo)
           return caminho_arquivo
-
-     colunas_para_soma = ['VALOR_TOTAL_COM_JUROS', 'VALOR_TOTAL_ORIGINAL']
-
-     for colunas in colunas_para_soma:
-          df[colunas] = pd.to_numeric(df[colunas], errors='coerce')
-
-     ws["A1"].font = Font(bold=True)
-     ws["A1"].alignment = Alignment(horizontal="center")
-
-     ultima_linha = ws.max_row + 2
-
-     valores_agrupados = df.groupby('CODSUPERVISOR', dropna=False)[colunas_para_soma].sum().reset_index()
-     ultima_linha = criar_tabela_agrupada(ws, valores_agrupados, ultima_linha, titulo=f"TOTAL GERAL POR 'CODSUPERVISOR'", colunas_soma=colunas_para_soma)
-
-     for key in ['CODRCA']:
-          if key in df.columns:
-               tabela_rca = df.groupby(key, dropna=False)[colunas_para_soma].sum().reset_index()
-               tabela_rca = tabela_rca[[key, *colunas_para_soma]]
-               ultima_linha += 1
-               ultima_linha = criar_tabela_agrupada(ws, tabela_rca, ultima_linha, titulo=f"TOTAL POR {key}", colunas_soma=colunas_para_soma)
-
-     _adicionar_blocos_por_rca(ws, df, ultima_linha)
-
-     wb.save(caminho_arquivo)
-     return caminho_arquivo
+     finally:
+          wb.close()
      
 
 def criar_tabela_agrupada(planilha, dados: pd.DataFrame, linha_inicio: int, titulo: str, colunas_soma: list[str]):

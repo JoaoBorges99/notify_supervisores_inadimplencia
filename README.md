@@ -33,8 +33,8 @@ Configure as variáveis em `.env`:
 ```env
 AGN_API_KEY='...'
 AGR_API_URL='...'
-WPP_API_KEY='...'
-WPP_API_URL='...'
+WPP_API_URL='https://apibot.agnconsultoria.com.br'
+WPP_SESSION_NAME='ti'
 
 RUN_MODE='scheduler'
 TIMEZONE='America/Sao_Paulo'
@@ -56,6 +56,8 @@ CADASTRO_SCHEDULE_TIMES='08:00'
 - Horários em `HH:MM`, separados por vírgula.
 - Falha em um job não cancela o outro nem o loop do scheduler.
 - `DRY_RUN=true`: gera os Excel e **não** envia WhatsApp (para validar o fluxo).
+- `WPP_SESSION_NAME`: sessão do bot no `POST /senddocument` (padrão: `cobranca`).
+- `WPP_LIVE_SEND=true` + `WPP_TEST_PHONE`: o unittest envia um Excel real para o número de teste.
 
 Rotas da API analytics:
 
@@ -74,6 +76,14 @@ Validar sem enviar WhatsApp:
 
 ```
 python -m unittest test_servico.py -v
+```
+
+Envio real no WhatsApp (número de teste):
+
+```
+set WPP_LIVE_SEND=true
+set WPP_TEST_PHONE=5533991461098
+python -m unittest test_servico.TestLiveApi.test_senddocument_live_envia_arquivo -v
 ```
 
 ```
@@ -126,4 +136,4 @@ Para executar com Docker usando scheduler interno (sem cron no container):
 
 - Inadimplência: Excel com tabelas agrupadas e somas automáticas (`VALOR_TOTAL_COM_JUROS`, `VALOR_TOTAL_ORIGINAL`).
 - Cadastro incompleto: Excel de listagem, arquivo `cadastro-sup-{codigo}-{data}.xlsx`.
-- Envio de mídia via WhatsApp API.
+- Envio do Excel via `POST {WPP_API_URL}/senddocument` (header `apikey`, sessão `WPP_SESSION_NAME`, documento em base64).

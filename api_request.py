@@ -12,8 +12,8 @@ class ApiRequest:
           dotenv.load_dotenv()
           self.agn_api_Key = os.getenv('AGN_API_KEY')
           self.agn_api_url = os.getenv('AGR_API_URL')
-          self.wpp_api_key = os.getenv('WPP_API_KEY')
-          self.wpp_api_url = os.getenv('WPP_API_URL')
+          self.wpp_api_url = os.getenv('WPP_API_URL', '').rstrip('/')
+          self.wpp_session_name = os.getenv('WPP_SESSION_NAME', 'cobranca')
 
      def generate_token_request (self,body: dict) -> str:
           try:
@@ -49,7 +49,7 @@ class ApiRequest:
                json_data = {
                     "function" : "getSupervisor",
                     "database" : "atacado",
-                    "matricula" : "3312"
+                    "matricula" : "7"
                }
 
                token = self.generate_token_request(json_data)
@@ -127,28 +127,42 @@ class ApiRequest:
           
      def send_mensagem_chatbot(self, msg: str, numero: str, caminho_arquivo: str, nome_nome_arquivo: str) -> str:
           try:
-               
-               headers = {
-                    "Content-Type": "application/json",
-                    "apikey": self.wpp_api_key
-               }
-               
                with open(caminho_arquivo, 'rb') as arquivo:
                     conteudo = arquivo.read()
 
+               nome_arquivo, extensao = os.path.splitext(nome_nome_arquivo)
+               extension = extensao.lstrip('.').lower()
+               if not extension:
+                    _, extensao_caminho = os.path.splitext(caminho_arquivo)
+                    extension = extensao_caminho.lstrip('.').lower() or 'xlsx'
+
                body_message_json = {
-                    "number": numero,
-                    "mediatype" : "document",
-                    "fileName": f"{nome_nome_arquivo}",
-                    "caption": f"{msg}",
-                    "media": f"{base64.b64encode(conteudo).decode('utf-8')}"
+                    "sessionname": self.wpp_session_name,
+                    "extension": extension,
+                    "telefone": numero,
+                    "filename": nome_arquivo,
+                    "caption": msg,
+                    "document": base64.b64encode(conteudo).decode('utf-8'),
                }
 
-               response = requests.post(f"{self.wpp_api_url}/message/sendMedia/cobranca", headers=headers, json=body_message_json)
-               
-               if response.status_code != 201 and response.status_code != 200:
-                    raise Exception(response.json())
+               headers = {
+                    "Content-Type": "application/json"
+               }
+
+               response = requests.post(
+                    f"{self.wpp_api_url}/senddocument",
+                    headers=headers,
+                    json=body_message_json,
+               )
+
+               if response.status_code not in (200, 201):
+                    detalhe = response.text
+                    try:
+                         detalhe = response.json()
+                    except Exception:
+                         pass
+                    raise Exception(detalhe)
 
                return f"Mensagem enviada com sucesso para o numero {numero} "
-          except Exception as e :
+          except Exception as e:
                return f"Erro ao enviar mensagem: {e}"
