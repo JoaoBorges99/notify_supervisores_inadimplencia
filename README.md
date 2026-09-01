@@ -1,30 +1,28 @@
-# Notificar RCAs - Relatório de Inadimplência
+# Notificar GAs — Relatórios de Inadimplência e Cadastro Incompleto
 
 ## Descrição do Projeto
 
-Este projeto automatiza a geração e envio de relatórios semanais de inadimplência para Gerentes Regionais (GRs) e Gerentes de Área (GAs). O sistema é projetado para ser executado semanalmente, idealmente aos sábados pela manhã (por exemplo, às 08:00), utilizando dados de inadimplência dos Representantes Comerciais (RCAs) associados.
+Este projeto automatiza a geração e o envio semanal de relatórios para Gerentes de Área (GAs) via WhatsApp. Há **dois jobs independentes**, cada um com agenda e falha isoladas:
 
-O relatório é baseado em um espelho similar ao sistema 8318 e inclui informações detalhadas sobre clientes inadimplentes, com foco em títulos vencidos entre 90 e 10 dias de atraso.
+- **Inadimplência**: títulos vencidos (espelho próximo da rotina 8318), com totais por RCA e supervisor.
+- **Cadastro incompleto**: clientes **bloqueados** na rotina 1203 cujo histórico de bloqueio é **CADASTRO INCOMPLETO**.
+
+O scheduler interno dispara cada job nos dias e horários configurados. O padrão sugerido é **segunda**: cadastro incompleto às **08:00** e inadimplência às **12:00**, para não colidir no WhatsApp.
 
 ## Funcionalidades Principais
 
-- **Obtenção de Dados**: Consulta APIs para recuperar listas de supervisores ativos e relatórios de inadimplência filtrados por supervisor.
-- **Geração de Relatórios**: Cria arquivos Excel (.xlsx) com dados organizados, incluindo:
-  - Nome do GA
-  - Nome do GR
-  - Nome do RCA (com quebra por inadimplência individual)
-  - Dados dos clientes: razão social, endereço, telefones de contato, e-mails
-  - Dados do título
-  - Últimos 3 históricos de cobranças (rotina 1214, se disponível)
-- **Agrupamentos e Somas**: No final do relatório, soma os valores por RCA, por GR e por GA.
-- **Envio Automático**: Envia os relatórios gerados via WhatsApp para os destinatários apropriados.
+- **Obtenção de Dados**: consulta a lista de supervisores ativos e o relatório filtrado por GA.
+- **Geração de Relatórios**: cria arquivos Excel (.xlsx) por GA.
+- **Inadimplência**: totais por RCA e supervisor, além de blocos agrupados por RCA.
+- **Cadastro incompleto**: planilha de listagem (sem totais financeiros), com blocos por RCA quando a coluna existir.
+- **Envio Automático**: WhatsApp com o Excel em anexo. Se o GA não tiver clientes no relatório, nada é enviado.
 
 ## Estrutura do Projeto
 
-- `api_request.py`: Classe responsável por interações com APIs externas, geração de tokens JWT e envio de mensagens.
-- `create_excel.py`: Função para criar e formatar arquivos Excel a partir dos dados obtidos.
-- `main.py`: Script principal que orquestra a execução do processo.
-- `requirements.txt`: Lista de dependências Python necessárias.
+- `api_request.py`: APIs externas, JWT e envio de mensagens.
+- `create_excel.py`: geração e formatação dos Excel.
+- `main.py`: orquestra os jobs e o agendamento.
+- `requirements.txt`: dependências Python.
 
 ## Como Usar
 
@@ -40,24 +38,67 @@ WPP_API_URL='...'
 
 RUN_MODE='scheduler'
 TIMEZONE='America/Sao_Paulo'
-SCHEDULE_DAYS='SEG,TER,QUA,QUI,SEX'
-SCHEDULE_TIMES='08:00,12:00'
+
+INADIMPLENCIA_ENABLED='true'
+SCHEDULE_DAYS='SEG'
+SCHEDULE_TIMES='12:00'
+
+CADASTRO_ENABLED='true'
+CADASTRO_SCHEDULE_DAYS='SEG'
+CADASTRO_SCHEDULE_TIMES='08:00'
 ```
 
-- `TIMEZONE` é obrigatório e deve ser um timezone válido (ex.: `America/Sao_Paulo`).
-- `SCHEDULE_DAYS` aceita: `SEG,TER,QUA,QUI,SEX,SAB,DOM`.
-- `SCHEDULE_TIMES` aceita múltiplos horários em `HH:MM`, separados por vírgula.
-- O scheduler executa pela combinação de dias x horários.
+- `TIMEZONE` é obrigatório (ex.: `America/Sao_Paulo`).
+- `INADIMPLENCIA_ENABLED` e `CADASTRO_ENABLED` aceitam `true`/`false`. Padrão: `true`.
+- `SCHEDULE_DAYS` / `SCHEDULE_TIMES`: agenda da **inadimplência** (obrigatórios se o job estiver ligado).
+- `CADASTRO_SCHEDULE_DAYS` / `CADASTRO_SCHEDULE_TIMES`: agenda do **cadastro incompleto**. Se omitidos, usam `SEG` e `08:00`.
+- Dias aceitos: `SEG,TER,QUA,QUI,SEX,SAB,DOM`.
+- Horários em `HH:MM`, separados por vírgula.
+- Falha em um job não cancela o outro nem o loop do scheduler.
+- `DRY_RUN=true`: gera os Excel e **não** envia WhatsApp (para validar o fluxo).
+
+Rotas da API analytics:
+
+- Inadimplência: `/financeiro/clientes_inadimplentes_por_supervisor/index.php`
+- Cadastro incompleto: `/financeiro/cadastro_incompleto/index.php`
+
+### Execução com .venv
+
+```
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Validar sem enviar WhatsApp:
+
+```
+python -m unittest test_servico.py -v
+```
+
+```
+set DRY_RUN=true
+set RUN_MODE=once
+python main.py
+```
+
+No PowerShell:
+
+```
+$env:DRY_RUN='true'
+$env:RUN_MODE='once'
+python main.py
+```
 
 ### Execução sem Docker
 
-- Execução única (manual):
+- Execução única (manual) dos jobs habilitados:
 
   ```
   python main.py
   ```
 
-  Use `RUN_MODE='once'` para finalizar após uma execução.
+  Use `RUN_MODE='once'` para finalizar após a execução.
 
 - Execução contínua (agendada pelo próprio Python):
 
@@ -79,13 +120,10 @@ Para executar com Docker usando scheduler interno (sem cron no container):
    docker-compose up --build -d
    ```
 
-   O container será executado em background e o sistema seguirá o agendamento definido no `.env`. Os arquivos gerados serão salvos na pasta `arquivos-gerados/` do host.
-
-## Período de Vencimento
-
-O relatório foca em títulos com vencimento entre 90 e 10 dias de atraso.
+   O container segue o agendamento do `.env`. Os arquivos gerados vão para `arquivos-gerados/` no host.
 
 ## Notas Técnicas
 
-- Gera arquivos Excel com formatação avançada, incluindo tabelas agrupadas e somas automáticas.
+- Inadimplência: Excel com tabelas agrupadas e somas automáticas (`VALOR_TOTAL_COM_JUROS`, `VALOR_TOTAL_ORIGINAL`).
+- Cadastro incompleto: Excel de listagem, arquivo `cadastro-sup-{codigo}-{data}.xlsx`.
 - Envio de mídia via WhatsApp API.

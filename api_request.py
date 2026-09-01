@@ -69,7 +69,13 @@ class ApiRequest:
                print(e)
                return {}
 
-     def relatorio_inadiplencia_filtrando_supervisor(self, codigo_supervisor: str, nome_supervisor: str) -> list :
+     def _relatorio_por_supervisor(
+          self,
+          endpoint: str,
+          codigo_supervisor: str,
+          nome_supervisor: str,
+          nome_funcao: str,
+     ) -> list:
           try:
                json_body = {
                     "database" : "atacado",
@@ -84,19 +90,40 @@ class ApiRequest:
                     "token" : token
                }
 
-               response = requests.post(f"{self.agn_api_url}/financeiro/clientes_inadimplentes_por_supervisor/index.php", json=body_request)
-               
-               if 'result' in response.json()[0]:
+               response = requests.post(f"{self.agn_api_url}{endpoint}", json=body_request)
+               payload = response.json()
+
+               if payload and 'result' in payload[0]:
                     raise Exception("Não foi possivel encontrar dados para a busca executada!")
 
                if response.status_code == 200:
-                    return response.json()
+                    return payload
                else:
-                    raise Exception("Status code diferente de 200, erro ao executar requisisção de relatorio na função relatorio_inadiplencia_filtrando_supervisor")
+                    raise Exception(
+                         f"Status code diferente de 200, erro ao executar requisisção de relatorio na função {nome_funcao}"
+                    )
 
           except Exception as e:
                print(e)
                return []
+
+     def relatorio_inadiplencia_filtrando_supervisor(self, codigo_supervisor: str, nome_supervisor: str) -> list :
+          return self._relatorio_por_supervisor(
+               "/financeiro/clientes_inadimplentes_por_supervisor/index.php",
+               codigo_supervisor,
+               nome_supervisor,
+               "relatorio_inadiplencia_filtrando_supervisor",
+          )
+
+     def relatorio_cadastro_incompleto_filtrando_supervisor(
+          self, codigo_supervisor: str, nome_supervisor: str
+     ) -> list:
+          return self._relatorio_por_supervisor(
+               "/financeiro/cadastro_incompleto/index.php",
+               codigo_supervisor,
+               nome_supervisor,
+               "relatorio_cadastro_incompleto_filtrando_supervisor",
+          )
           
      def send_mensagem_chatbot(self, msg: str, numero: str, caminho_arquivo: str, nome_nome_arquivo: str) -> str:
           try:
