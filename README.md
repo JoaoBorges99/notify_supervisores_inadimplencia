@@ -15,6 +15,7 @@ O scheduler interno dispara cada job nos dias e horários do `.env`. O padrão s
 ## Funcionalidades
 
 - Consulta supervisores ativos e o relatório filtrado por GA.
+- Ignora envio para códigos listados em `SUPERVISORES_IGNORAR`.
 - Gera um Excel (`.xlsx`) por GA em `arquivos-gerados/`.
 - **Inadimplência**: totais por RCA e supervisor, além de blocos agrupados por RCA.
 - **Cadastro incompleto**: planilha de listagem (sem totais financeiros).
@@ -62,6 +63,7 @@ Edite o `.env` com as chaves e URLs reais.
 | `CADASTRO_ENABLED` | não | `true` | Liga/desliga o job de cadastro incompleto |
 | `CADASTRO_SCHEDULE_DAYS` | não | `SEG` | Dias do cadastro incompleto |
 | `CADASTRO_SCHEDULE_TIMES` | não | `08:00` | Horários do cadastro incompleto |
+| `SUPERVISORES_IGNORAR` | não | vazio | Códigos de supervisor que não recebem envio (`1,26,36,50`) |
 
 Dias aceitos: `SEG,TER,QUA,QUI,SEX,SAB,DOM`. Horários em `HH:MM`, separados por vírgula. Falha em um job não cancela o outro nem o loop do scheduler.
 

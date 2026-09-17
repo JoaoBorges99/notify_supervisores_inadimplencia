@@ -38,6 +38,38 @@ def _is_enabled(env_name: str, default: bool = True) -> bool:
     raise ValueError(f"{env_name} inválido: '{raw}'. Use true ou false")
 
 
+def _normalizar_codigo_supervisor(codigo) -> str:
+    if codigo is None:
+        return ""
+
+    texto = str(codigo).strip()
+    if texto.isdigit():
+        return str(int(texto))
+    return texto
+
+
+def _parse_codigos_ignorados(raw: str, env_name: str = "SUPERVISORES_IGNORAR") -> set:
+    if raw is None or raw.strip() == "":
+        return set()
+
+    ignorados = set()
+    for item in raw.split(","):
+        codigo = _normalizar_codigo_supervisor(item)
+        if not codigo:
+            continue
+        if not codigo.isdigit():
+            raise ValueError(
+                f"Código inválido em {env_name}: '{item}'. Use números separados por vírgula."
+            )
+        ignorados.add(codigo)
+
+    return ignorados
+
+
+def _codigos_supervisores_ignorados() -> set:
+    return _parse_codigos_ignorados(os.getenv("SUPERVISORES_IGNORAR", ""))
+
+
 def _limpar_arquivos_gerados(prefixo: str):
     pasta = "arquivos-gerados"
     if not os.path.exists(pasta):
@@ -73,13 +105,28 @@ def _run_job_envio(
 
     api = ApiRequest()
     sup_data = api.get_supervisores_ativos()
+    supervisores_ignorados = _codigos_supervisores_ignorados()
 
     if not sup_data:
         print(f"Nenhum supervisor retornado para o job '{job_label}'.")
         print(f"Execução do job '{job_label}' finalizada - {datetime.now()} ")
         return
 
+    if supervisores_ignorados:
+        print(
+            f"Supervisores ignorados no job '{job_label}': "
+            f"{','.join(sorted(supervisores_ignorados, key=int))}"
+        )
+
     for supervisor in sup_data:
+        codigo = _normalizar_codigo_supervisor(supervisor.get("codigo"))
+        if codigo in supervisores_ignorados:
+            print(
+                f"Envio ignorado para o supervisor {codigo}-"
+                f"{str(supervisor.get('titulo', '')).upper()}"
+            )
+            continue
+
         if not supervisor.get("telefone"):
             continue
 
